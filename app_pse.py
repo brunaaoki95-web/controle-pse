@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # --------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA
+# CONFIGURAÇÃO
 # --------------------------------------------------
 st.set_page_config(
     page_title="Controle de PSE",
@@ -11,16 +11,38 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# CARREGAR PLANILHA DE ATLETAS
+# CARREGAR ATLETAS (COM TRATAMENTO DE ERRO)
 # --------------------------------------------------
 @st.cache_data
 def carregar_atletas():
-    return pd.read_excel("atletas.xlsx")
+    df = pd.read_excel("atletas.xlsx")
+
+    # Padronizar nomes das colunas
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.lower()
+    )
+
+    return df
 
 df_atletas = carregar_atletas()
 
+# DEBUG VISUAL (pode remover depois)
+st.write("Colunas encontradas:", df_atletas.columns.tolist())
+
 # --------------------------------------------------
-# MAPA DE ATLETAS (id -> dados)
+# VERIFICAÇÃO DE SEGURANÇA
+# --------------------------------------------------
+colunas_necessarias = {"id", "nome", "categoria", "posição"}
+
+if not colunas_necessarias.issubset(df_atletas.columns):
+    st.error("❌ Erro na planilha atletas.xlsx")
+    st.error(f"Colunas esperadas: {colunas_necessarias}")
+    st.stop()
+
+# --------------------------------------------------
+# MAPA DE ATLETAS
 # --------------------------------------------------
 mapa_atletas = (
     df_atletas
@@ -29,10 +51,10 @@ mapa_atletas = (
 )
 
 # --------------------------------------------------
-# PEGAR PARÂMETROS DA URL (?perfil=atleta&id=1)
+# PEGAR PARÂMETROS DA URL
 # --------------------------------------------------
 params = st.query_params
-id_atleta = params.get("id", None)
+id_atleta = params.get("id")
 
 dados_atleta = None
 if id_atleta:
@@ -50,7 +72,7 @@ st.title("➕ Registrar treino")
 # DATA
 data = st.date_input("Data")
 
-# NOME DO ATLETA (AUTOMÁTICO PELO LINK)
+# NOME DO ATLETA
 nome_atleta = dados_atleta["nome"] if dados_atleta else ""
 
 st.text_input(
@@ -59,7 +81,6 @@ st.text_input(
     disabled=True
 )
 
-# MOSTRAR CATEGORIA E POSIÇÃO
 if dados_atleta:
     st.caption(
         f"Categoria: {dados_atleta['categoria']} | "
@@ -87,6 +108,5 @@ pse = st.slider(
     0, 10, 0
 )
 
-# SALVAR (por enquanto só confirmação visual)
 if st.button("Salvar"):
     st.success("Treino registrado com sucesso!")
