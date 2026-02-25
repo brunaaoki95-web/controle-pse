@@ -14,7 +14,12 @@ st.set_page_config(
 # CARREGAR ATLETAS (COM TRATAMENTO DE ERRO)
 # --------------------------------------------------
 @st.cache_data
-def carregar_atletas():
+df_atletas = carregar_atletas()
+
+# Criar ID automático se não existir
+if "id" not in df_atletas.columns:
+    df_atletas = df_atletas.reset_index(drop=True)
+    df_atletas["id"] = df_atletas.index + 1
     df = pd.read_excel("atletas.xlsx")
 
     # Padronizar nomes das colunas
@@ -110,3 +115,4 @@ pse = st.slider(
 
 if st.button("Salvar"):
     st.success("Treino registrado com sucesso!")
+
