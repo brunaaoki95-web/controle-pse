@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
+from datetime import date
 
 # --------------------------------------------------
-# CONFIGURAÇÃO
+# CONFIGURAÇÃO DA PÁGINA
 # --------------------------------------------------
 st.set_page_config(
     page_title="Controle de PSE",
@@ -11,33 +12,34 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# CARREGAR ATLETAS (COM TRATAMENTO DE ERRO)
+# FUNÇÃO: CARREGAR ATLETAS
 # --------------------------------------------------
 @st.cache_data
-df_atletas = carregar_atletas()
+def carregar_atletas():
+    df = pd.read_excel("atletas.xlsx", header=0)
 
-# Criar ID automático se não existir
-if "id" not in df_atletas.columns:
-    df_atletas = df_atletas.reset_index(drop=True)
-    df_atletas["id"] = df_atletas.index + 1
-    df = pd.read_excel("atletas.xlsx")
-
-    # Padronizar nomes das colunas
+    # Limpar nomes das colunas
     df.columns = (
         df.columns
+        .astype(str)
         .str.strip()
         .str.lower()
     )
 
     return df
 
+# --------------------------------------------------
+# CARREGAR DADOS
+# --------------------------------------------------
 df_atletas = carregar_atletas()
 
-# DEBUG VISUAL (pode remover depois)
+# DEBUG (TEMPORÁRIO)
+st.subheader("DEBUG – Leitura do Excel")
+st.write(df_atletas.head())
 st.write("Colunas encontradas:", df_atletas.columns.tolist())
 
 # --------------------------------------------------
-# VERIFICAÇÃO DE SEGURANÇA
+# VERIFICAÇÃO DE COLUNAS
 # --------------------------------------------------
 colunas_necessarias = {"id", "nome", "categoria", "posição"}
 
@@ -49,14 +51,10 @@ if not colunas_necessarias.issubset(df_atletas.columns):
 # --------------------------------------------------
 # MAPA DE ATLETAS
 # --------------------------------------------------
-mapa_atletas = (
-    df_atletas
-    .set_index("id")
-    .to_dict(orient="index")
-)
+mapa_atletas = df_atletas.set_index("id").to_dict(orient="index")
 
 # --------------------------------------------------
-# PEGAR PARÂMETROS DA URL
+# PEGAR ID DA URL
 # --------------------------------------------------
 params = st.query_params
 id_atleta = params.get("id")
@@ -72,12 +70,10 @@ if id_atleta:
 # --------------------------------------------------
 # INTERFACE
 # --------------------------------------------------
-st.title("➕ Registrar treino")
+st.title("➕ Registrar Treino – PSE")
 
-# DATA
-data = st.date_input("Data")
+data = st.date_input("Data", date.today())
 
-# NOME DO ATLETA
 nome_atleta = dados_atleta["nome"] if dados_atleta else ""
 
 st.text_input(
@@ -94,25 +90,21 @@ if dados_atleta:
 else:
     st.warning("Atleta não identificado. Verifique o link.")
 
-# MODALIDADE
 modalidade = st.selectbox(
     "Modalidade",
     ["Quadra", "Academia", "Físico"]
 )
 
-# DURAÇÃO
 duracao = st.number_input(
     "Duração do treino (min)",
     min_value=0,
     step=10
 )
 
-# PSE
 pse = st.slider(
     "PSE (0 = descanso | 10 = máximo)",
     0, 10, 0
 )
 
 if st.button("Salvar"):
-    st.success("Treino registrado com sucesso!")
-
+    st.success("✅ Treino registrado com sucesso!")
